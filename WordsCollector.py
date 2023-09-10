@@ -1,6 +1,9 @@
 import nltk
 from nltk.stem.lancaster import LancasterStemmer
 
+from local_translator import LocalTranslator
+from srtWordsCollector import read_srt_file
+
 nltk.download('stopwords')
 
 
@@ -9,6 +12,9 @@ class WordsCollector:
 
 def read_top_english_words(top_x):
     return set([line.strip() for line in open('10000-english.txt')][:top_x])
+
+def read_names():
+    return set([line.strip() for line in open('names_big.txt')])
 
 def remove_duplicates(words):
     filtered_words = set(words.split())
@@ -32,6 +38,25 @@ def remove_numbers(words):
             words_without_numbers.append(word)
     return ' '.join(words_without_numbers)
 
+
+def remove_shorter_words(words, length=4):
+    filtered_words = words.split()
+    filtered_words = [word for word in filtered_words if len(word) >= length]
+    return ' '.join(filtered_words)
+
+def remove_names(words):
+        words = words.split()
+        # print(words)
+        names = read_names()
+        filtered_words = [word for word in words if word not in names]
+        return ' '.join(filtered_words)
+
+
+class srtWordsCollector:
+    def __init__(self, words):
+        self.words = words
+
+
 class strWordsCollector:
     def __init__(self, words):
         self.words = words
@@ -54,8 +79,15 @@ class strWordsCollector:
         return ' '.join(filtered_words)
     @staticmethod
     def clean_up(words):
-        words = words.replace(',', '').replace('.', '').replace(':', '').replace(';', '').replace("'s", '')\
-            .replace("\"", '').lower()
+        chars = ",./:;?!♪_"
+        for char in chars:
+            words = words.replace(char, '')
+        forbiden_text = "'s,'ll,'re,'d,'m,'ve".split(",")
+        for text in forbiden_text:
+            words = words.replace(text, '')
+
+        words = words.replace("\"", '').lower()
+
         return words
 
     def get_words(self):
@@ -63,6 +95,8 @@ class strWordsCollector:
         # self.words = removing_plural(self.words)
         self.words = remove_duplicates(self.words)
         self.words = remove_numbers(self.words)
+        self.words = remove_shorter_words(self.words)
+        self.words = remove_names(self.words)
         # print(self.words)
         self.words = self.remove_stop_words(self.words)
         self.words = self.remove_top1000_words(self.words)
@@ -111,13 +145,27 @@ In my viewpoint, this social effect is remarkably captivating, shedding light on
 
 
 """
+
+
+
+
+
 # print(len(words)) #264
-collector = strWordsCollector(test)
+srt_file_path = r'C:\Users\Administrator\Downloads\The.srt'
+subtitles = read_srt_file(srt_file_path)
+
+# collector = strWordsCollector(test)
+collector = strWordsCollector(subtitles)
 new_words = collector.get_words()
 # print(len(new_words)) #161
 
 print(new_words)
+print(len(new_words.split(' ')))
 
+local_translator = LocalTranslator("PL")
 
+translated_word = local_translator.translate(new_words.split()[0])
+
+print(translated_word)
 # print(len(top1000))
 # print(top1000)

@@ -1,8 +1,8 @@
 from gtts import gTTS
-mytext = 'Welcome to geeksforgeeks!'
-language = 'en'
-myobj = gTTS(text=mytext, lang=language, slow=False)
 
-# Saving the converted audio in a mp3 file named
-# welcome
-myobj.save("welcome.mp3")
+
+def record_voice(text, language='en', file_name=None):
+    myobj = gTTS(text=text, lang=language, slow=False)
+    if not file_name:
+        file_name = text
+    myobj.save(f"audio/{file_name}.mp3")
