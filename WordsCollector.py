@@ -3,7 +3,7 @@ from nltk.stem.lancaster import LancasterStemmer
 
 from local_translator import LocalTranslator
 from srtWordsCollector import read_srt_file
-
+import pandas as pd
 nltk.download('stopwords')
 
 
@@ -51,6 +51,32 @@ def remove_names(words):
         filtered_words = [word for word in words if word not in names]
         return ' '.join(filtered_words)
 
+def read_verbs(path="verbs-dictionaries.csv"):
+    df = pd.read_csv(path, header=None, sep="\t")
+    df.columns = ['1', '2', '3', '4', '5']
+    return df
+
+def transform_verbs(words):
+    df_verbs = read_verbs()
+    words = words.split()
+    df = pd.DataFrame(words, columns=['words'])
+    words_to_add_set = set()
+    words_to_remove = set()
+    print(words)
+    for column in ['2', '3', '4', '5']:
+        df_tmp = df.merge(df_verbs, how='left', left_on='words', right_on=column)
+        base_form_words = set(df_tmp[~df_tmp["1"].isna()]['1'])
+        to_remove = set(df_tmp[~df_tmp[column].isna()][column])
+        words_to_remove = words_to_remove.union(to_remove)
+        words_to_add_set = words_to_add_set.union(base_form_words)
+
+    print(words_to_remove)
+    print(words_to_add_set)
+    new_words = set(words).difference(words_to_remove)
+
+    new_words = set(new_words).union(words_to_add_set)
+    return ' '.join(new_words)
+
 
 class srtWordsCollector:
     def __init__(self, words):
@@ -71,18 +97,16 @@ class strWordsCollector:
 
     @staticmethod
     def remove_top1000_words(words):
-        # print(words)
         words = words.split()
-        # print(words)
         top1000 = read_top_english_words(4000)
         filtered_words = [word for word in words if word not in top1000]
         return ' '.join(filtered_words)
     @staticmethod
     def clean_up(words):
-        chars = ",./:;?!♪_"
+        chars = ",./:;?!♪_“*”"
         for char in chars:
             words = words.replace(char, '')
-        forbiden_text = "'s,'ll,'re,'d,'m,'ve".split(",")
+        forbiden_text = "'s,'ll,'re,'d,'m,'ve,'t,’s,’ll,’re,’d,’m,’ve,’t".split(",")
         for text in forbiden_text:
             words = words.replace(text, '')
 
@@ -97,6 +121,7 @@ class strWordsCollector:
         self.words = remove_numbers(self.words)
         self.words = remove_shorter_words(self.words)
         self.words = remove_names(self.words)
+        self.words = transform_verbs(self.words)
         # print(self.words)
         self.words = self.remove_stop_words(self.words)
         self.words = self.remove_top1000_words(self.words)
@@ -145,27 +170,78 @@ In my viewpoint, this social effect is remarkably captivating, shedding light on
 
 
 """
+test2 = """
+It was indeed music, the most beautiful music Raggedy
+Ann had ever heard.
 
+It grew louder, but still seemed to be far away.
+
+Raggedy Ann and Fido could hear it distinctly and it
+sounded as if hundreds of voices were singing in unison.
+
+“*Please don’t howl, Fido,” Raggedy Ann said as she put
+her two rag arms around the dog’s nose. Fido usually “sang”
+when he heard music.
+
+But Fido did not sing this time; he was filled with wonder.
+It seemed as if something very nice was going to happen.
+
+Raggedy Ann sat upright in bed. The room was flooded
+with a strange, beautiful light and the music came floating
+in through the nursery window.
+
+Raggedy Ann hopped from her bed and ran across the
+floor, trailing the bed clothes behind her. Fido followed
+close behind and together they looked out the window across
+the flower garden.
+
+There among the flowers were hundreds of tiny beings,
+some playing on tiny reed instruments and flower horns,
+while others sang. This was the strange, wonderful music
+Raggedy and Fido had heard.
+
+“It’s the Fairies!” said Raggedy Ann. “To your basket
+quick, Fido! They are coming this way!” And Raggedy
+Ann ran back to her bed, with the bed clothes trailing behind
+her.
+
+Fido gave three jumps and he was in his basket, pretending
+he was sound asleep, but one little black eye was peeping
+through a chink in the side.
+
+Raggedy jumped into her bed and pulled the covers to
+her chin, but lay so that her shoe-button eyes could see
+towards the window.
+
+Little Fairy forms radiant as silver came flitting into the
+nursery, singing in far away voices. They carried a little
+bundle. A beautiful light came from this bundle, and to
+Raggedy Ann and Fido it seemed like sunshine and moon-
+
+
+Process finished with exit code 0
+"""
 
 
 
 
 # print(len(words)) #264
-srt_file_path = r'C:\Users\Administrator\Downloads\The.srt'
+# srt_file_path = r'C:\Users\Administrator\Downloads\The.srt'
+srt_file_path = r'E:\Python\AnkyCreator\subs\Guardians.of.the.Galaxy.Vol.2.srt'
 subtitles = read_srt_file(srt_file_path)
 
 # collector = strWordsCollector(test)
-collector = strWordsCollector(subtitles)
+collector = strWordsCollector(test2)
 new_words = collector.get_words()
 # print(len(new_words)) #161
 
 print(new_words)
 print(len(new_words.split(' ')))
 
-local_translator = LocalTranslator("PL")
-
-translated_word = local_translator.translate(new_words.split()[0])
-
-print(translated_word)
+# local_translator = LocalTranslator("PL")
+#
+# translated_word = local_translator.translate(new_words.split()[0])
+#
+# print(translated_word)
 # print(len(top1000))
 # print(top1000)
